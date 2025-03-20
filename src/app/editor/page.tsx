@@ -2,10 +2,10 @@
 
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
-import Editor from '../../components/Editor'
-import EditorControls from '../../components/EditorControls'
-import EditorToolbar from '../../components/EditorToolbar'
-import TemplatePresets from '../../components/TemplatePresets'
+import Editor from '../../../components/Editor'
+import EditorControls from '../../../components/EditorControls'
+import EditorToolbar from '../../../components/EditorToolbar'
+import TemplatePresets from '../../../components/TemplatePresets'
 
 export default function EditorPage() {
   const searchParams = useSearchParams()

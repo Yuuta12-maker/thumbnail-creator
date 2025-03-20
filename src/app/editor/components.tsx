@@ -19,6 +19,8 @@ export function Editor({
   const canvasEl = useRef<HTMLCanvasElement>(null)
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [scale, setScale] = useState(1)
+  const containerRef = useRef<HTMLDivElement>(null)
   
   // キャンバスの初期化
   useEffect(() => {
@@ -46,13 +48,39 @@ export function Editor({
         onObjectSelected(null)
       })
       
+      // リサイズハンドラを追加
+      const handleResize = () => {
+        if (containerRef.current && fabricCanvas) {
+          const containerWidth = containerRef.current.clientWidth
+          const containerHeight = containerRef.current.clientHeight
+          
+          // コンテナサイズに基づいてスケール計算
+          const scaleX = (containerWidth - 40) / width
+          const newScale = Math.min(scaleX, 1) // 最大スケールは1に制限
+          
+          setScale(newScale)
+          
+          // containerRef.current のスタイルを更新
+          if (containerRef.current) {
+            containerRef.current.style.height = `${Math.min(height * newScale + 40, height + 40)}px`
+          }
+        }
+      }
+      
+      // 初期サイズ調整
+      handleResize()
+      
+      // リサイズイベントリスナー
+      window.addEventListener('resize', handleResize)
+      
       // クリーンアップ関数
       return () => {
+        window.removeEventListener('resize', handleResize)
         fabricCanvas.dispose()
         setCanvas(null)
       }
     }
-  }, [canvasEl])
+  }, [canvasEl, width, height])
   
   // サイズ変更時に調整
   useEffect(() => {
@@ -60,12 +88,21 @@ export function Editor({
       canvas.setWidth(width)
       canvas.setHeight(height)
       canvas.renderAll()
+      
+      // コンテナサイズも更新
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth
+        const scaleX = (containerWidth - 40) / width
+        const newScale = Math.min(scaleX, 1)
+        setScale(newScale)
+        containerRef.current.style.height = `${Math.min(height * newScale + 40, height + 40)}px`
+      }
     }
   }, [width, height, canvas])
   
   return (
-    <div className="relative editor-container overflow-auto">
-      <div className="canvas-wrapper">
+    <div ref={containerRef} className="relative editor-container overflow-hidden">
+      <div className="canvas-wrapper" style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
         <canvas ref={canvasEl} id="canvas"></canvas>
       </div>
       {!isLoaded && (
@@ -213,7 +250,7 @@ export function EditorControls({
   }
   
   return (
-    <div className="bg-white rounded-md shadow p-4">
+    <div className="bg-white rounded-md shadow p-4 sticky top-4">
       <h3 className="font-bold text-lg mb-4">編集パネル</h3>
       
       {selectedObject && (selectedObject.type === 'i-text' || selectedObject.type === 'text') && (
@@ -227,7 +264,7 @@ export function EditorControls({
             <textarea
               value={textValue}
               onChange={(e) => updateText(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows={2}
             />
           </div>
@@ -242,7 +279,7 @@ export function EditorControls({
               max="200"
               value={fontSize}
               onChange={(e) => updateFontSize(Number(e.target.value))}
-              className="w-full"
+              className="w-full accent-blue-500"
             />
           </div>
           
@@ -255,13 +292,13 @@ export function EditorControls({
                 type="color"
                 value={fontColor}
                 onChange={(e) => updateFontColor(e.target.value)}
-                className="w-8 h-8 mr-2"
+                className="w-10 h-10 mr-2 cursor-pointer rounded border border-gray-300"
               />
               <input
                 type="text"
                 value={fontColor}
                 onChange={(e) => updateFontColor(e.target.value)}
-                className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -275,13 +312,13 @@ export function EditorControls({
             type="color"
             value={backgroundColor}
             onChange={(e) => updateBackgroundColor(e.target.value)}
-            className="w-8 h-8 mr-2"
+            className="w-10 h-10 mr-2 cursor-pointer rounded border border-gray-300"
           />
           <input
             type="text"
             value={backgroundColor}
             onChange={(e) => updateBackgroundColor(e.target.value)}
-            className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+            className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -293,7 +330,7 @@ export function EditorControls({
             <button
               key={index}
               onClick={() => applyTemplate(template)}
-              className="flex flex-col items-center p-2 border border-gray-200 rounded-md hover:bg-gray-50"
+              className="template-card flex flex-col items-center p-2 border border-gray-200 rounded-md hover:bg-gray-50 transition"
             >
               <div 
                 className="w-full h-10 mb-1 rounded-sm" 
@@ -312,7 +349,7 @@ export function EditorControls({
             <button
               key={index}
               onClick={() => applyFilter(filter.value)}
-              className="p-2 border border-gray-200 rounded-md hover:bg-gray-50 text-sm"
+              className="p-2 border border-gray-200 rounded-md hover:bg-gray-50 text-sm transition hover:border-blue-300"
             >
               {filter.name}
             </button>
@@ -331,7 +368,7 @@ export function EditorControls({
                 canvas.current.renderAll()
               }
             }}
-            className={`p-2 border rounded-md hover:bg-gray-50 text-sm ${type === 'youtube' ? 'bg-blue-50 border-blue-200' : ''}`}
+            className={`p-2 border rounded-md hover:bg-blue-50 text-sm transition ${type === 'youtube' ? 'bg-blue-50 border-blue-200' : ''}`}
           >
             YouTube (1280×720)
           </button>
@@ -343,7 +380,7 @@ export function EditorControls({
                 canvas.current.renderAll()
               }
             }}
-            className={`p-2 border rounded-md hover:bg-gray-50 text-sm ${type === 'note' ? 'bg-green-50 border-green-200' : ''}`}
+            className={`p-2 border rounded-md hover:bg-green-50 text-sm transition ${type === 'note' ? 'bg-green-50 border-green-200' : ''}`}
           >
             note (1280×670)
           </button>
@@ -457,55 +494,57 @@ export function EditorToolbar({ canvas }: { canvas: React.RefObject<fabric.Canva
   }
   
   return (
-    <div className="bg-white p-4 rounded-md shadow flex flex-wrap gap-2">
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleImageUpload}
-        accept="image/*"
-        className="hidden"
-      />
-      
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center"
-        disabled={isUploading}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-        </svg>
-        画像をアップロード
-      </button>
-      
-      <button
-        onClick={addText}
-        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md flex items-center"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h12M9 3v18" />
-        </svg>
-        テキスト追加
-      </button>
-      
-      <button
-        onClick={removeSelected}
-        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-        削除
-      </button>
-      
-      <button
-        onClick={saveImage}
-        className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md flex items-center ml-auto"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
-        保存
-      </button>
+    <div className="bg-white p-4 rounded-md shadow mb-4">
+      <div className="flex flex-wrap gap-2">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleImageUpload}
+          accept="image/*"
+          className="hidden"
+        />
+        
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="tool-button bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center transition-all"
+          disabled={isUploading}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          画像をアップロード
+        </button>
+        
+        <button
+          onClick={addText}
+          className="tool-button bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md flex items-center transition-all"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 17h18M3 12h18M3 7h18" />
+          </svg>
+          テキスト追加
+        </button>
+        
+        <button
+          onClick={removeSelected}
+          className="tool-button bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center transition-all"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          削除
+        </button>
+        
+        <button
+          onClick={saveImage}
+          className="tool-button bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md flex items-center ml-auto transition-all"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          保存
+        </button>
+      </div>
     </div>
   )
 }
@@ -700,13 +739,13 @@ export function TemplatePresets({ canvas, type }: { canvas: React.RefObject<fabr
   const templates = type === 'youtube' ? youtubeTemplates : noteTemplates
   
   return (
-    <div className="mt-8">
+    <div className="bg-white rounded-md shadow p-4">
       <h3 className="font-bold text-lg mb-4">テンプレート</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {templates.map((template, index) => (
           <div 
             key={index}
-            className="border border-gray-200 rounded-lg overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+            className="template-card border border-gray-200 rounded-lg overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
             onClick={template.apply}
           >
             <div className="aspect-video bg-gray-100 flex items-center justify-center">

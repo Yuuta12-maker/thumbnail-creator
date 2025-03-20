@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 248, 250, 252;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+}
+
+.canvas-wrapper {
+  max-width: 100%;
+  overflow: auto;
+}
+
+.editor-container {
+  display: flex;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  background-color: #f8fafc;
+  position: relative;
+}

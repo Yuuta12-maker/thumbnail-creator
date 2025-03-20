@@ -4,8 +4,8 @@ import Link from 'next/link'
 
 export default function Home() {
   return (
-    <div className="flex flex-col items-center justify-center py-10">
-      <h1 className="text-4xl font-bold mb-8 text-center">サムネイル制作アプリ</h1>
+    <div className="flex flex-col items-center justify-center pt-6">
+      <h1 className="text-4xl font-bold mb-6 text-center">サムネイル制作アプリ</h1>
       
       <div className="max-w-2xl w-full bg-white p-8 rounded-lg shadow-md">
         <p className="text-lg mb-6 text-center">

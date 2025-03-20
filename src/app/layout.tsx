@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import Link from 'next/link'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -21,7 +22,9 @@ export default function RootLayout({
           <header className="bg-white shadow-sm">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between h-16 items-center">
-                <h1 className="text-2xl font-bold text-gray-900">サムネイル制作アプリ</h1>
+                <Link href="/" className="text-2xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
+                  サムネイル制作アプリ
+                </Link>
               </div>
             </div>
           </header>
